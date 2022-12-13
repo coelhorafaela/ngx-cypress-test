@@ -113,29 +113,38 @@ describe('Our first suite', () => {
   })
 
   it.only('assert property', () => {
+    function selectDayFromCurrent(day) {
+      let date = new Date()
+      date.setDate(date.getDate() + day)
+      let futureDay = date.getDate()
+      let futureMonth = date.toLocaleString('en-US', { month: 'short' }).replace('.', '')
+      let futureYear = date.getFullYear()
+      let dateAssert = `${futureMonth} ${futureDay}, ${date.getFullYear()}`
+
+      cy.get('nb-calendar-navigation').invoke('attr', 'ng-reflect-date').then(dateAttribute => {
+        const isTheFutureDate = dateAttribute.includes(futureMonth) && dateAttribute.includes(futureYear)
+        if (!isTheFutureDate) {
+          cy.get('[data-name="chevron-right"]').click()
+          selectDayFromCurrent(day)
+        } else {
+
+          cy.get('nb-calendar-day-picker [class="day-cell ng-star-inserted"]').contains(futureDay).click()
+        }
+      })
+
+      return dateAssert
+    }
+
     cy.visit('/')
     cy.contains('Forms').click()
     cy.contains('Datepicker').click()
 
-    let date = new Date()
-    date.setDate(date.getDate() + 50)
-    let futureDay = date.getDate()
-    let futureMonth = date.toLocaleString('default', { month: 'short' }).replace('.', '')
-
     cy.contains('nb-card', 'Common Datepicker').find('input').then(input => {
       cy.wrap(input).click()
-      selectDayFromCurrent()
+      const dateAssert = selectDayFromCurrent(10)
+      const dateAssertFormated = dateAssert.charAt(0).toUpperCase() + dateAssert.slice(1)
 
-      function selectDayFromCurrent() {
-        cy.get('nb-calendar-navigation').invoke('attr', 'ng-reflect-date').then(dateAttribute => {
-          if(!dateAttribute.toLocaleLowerCase().includes(futureMonth)){
-            cy.get('[data-name="chevron-right"]').click()
-            selectDayFromCurrent()
-          } else {
-            cy.get('nb-calendar-day-picker [class="day-cell ng-star-inserted"]').contains(futureDay).click()
-          }
-        })
-      }
+      cy.wrap(input).invoke('prop', 'value').should('contain', dateAssertFormated)
     })
 
     // cy.contains('nb-card', 'Common Datepicker').find('input').then(input => {
